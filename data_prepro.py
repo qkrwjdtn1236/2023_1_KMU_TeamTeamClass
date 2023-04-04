@@ -24,16 +24,28 @@ fillnaBehind 함수
 데이터의 평균으로 바꾸어줍니다.
 '''
 def fillnaBehind(Data:pd.DataFrame):
-    nullBoolean = Data[['구미 혁신도시배수지 유출유량 적산차']].isnull()
+    nullBoolean = Data['구미 혁신도시배수지 유출유량 적산차'].isnull()
     nullData = Data[nullBoolean].index
+    print(nullData)
     for i in nullData:
-        Data.loc[[i,'구미 혁신도시배수지 유출유량 적산차']] = \
-            (Data.loc[[i-1,'구미 혁신도시배수지 유출유량 적산차']] +
-              Data.loc[[i+1,'구미 혁신도시배수지 유출유량 적산차']])//2
+        # if Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차'] == np.NaN:
+        #     Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']
+        if Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차'] == np.NaN:
+            Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차']
+        else:
+            Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = \
+                (Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차'] +
+                Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차'])//2.0
+    
+    Data = Data.fillna(method='pad')
+
+    print(Data.isnull().sum())
+
+    return Data
 
 '''
-outlierDataremove 함수
-이 함수는 이상치 값(값이 너무 높은 값만)만 제거하고
+outlierDataToNan 함수
+이 함수는 이상치 값(값이 너무 높은 값만)만 NaN으로
 '''
 
 def outlierDataToNan(Data:pd.DataFrame,thres = 3.0):
@@ -45,6 +57,8 @@ def outlierDataToNan(Data:pd.DataFrame,thres = 3.0):
     iqr = q3-q1
 
     remove = Data['구미 혁신도시배수지 유출유량 적산차']> q3+thres*iqr
-    Data = Data[remove] = np.NaN
+    Data[remove] = np.NaN
 
     Data[Data['구미 혁신도시배수지 유출유량 적산차']<0] = np.NaN
+
+    return Data
