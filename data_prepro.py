@@ -49,7 +49,7 @@ outlierDataToNan 함수
 '''
 
 def outlierDataToNan(Data:pd.DataFrame,thres = 3.0):
-    
+    # 이 부분은 조심히 다뤄야 함.(fect. 교수)
     q1=Data['구미 혁신도시배수지 유출유량 적산차'].quantile(0.25)
     q2=Data['구미 혁신도시배수지 유출유량 적산차'].quantile(0.5)
     q3=Data['구미 혁신도시배수지 유출유량 적산차'].quantile(0.75)
@@ -62,3 +62,26 @@ def outlierDataToNan(Data:pd.DataFrame,thres = 3.0):
     Data[Data['구미 혁신도시배수지 유출유량 적산차']<0] = np.NaN
 
     return Data
+
+
+
+'''
+XDataToXAndYSeq(Data,step)
+학습하
+
+'''
+def XDataToXAndYSeq(Data:pd.DataFrame,step = 24):
+    
+    X = Data['구미 혁신도시배수지 유출유량 적산차'].to_numpy()
+    
+    XSeq = []
+    YSeq = []
+    
+    startIndex = step + 1
+
+    for i,j in enumerate(range(startIndex,len(X))):
+        XSeq.append(X[i:j-1])
+        YSeq.append(X[j])
+
+    
+    return np.array(XSeq), np.array(YSeq).reshape((-1,1))
