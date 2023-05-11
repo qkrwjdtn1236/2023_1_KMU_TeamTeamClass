@@ -26,7 +26,7 @@ fillnaBehind 함수
 def fillnaBehind(Data:pd.DataFrame):
     nullBoolean = Data['구미 혁신도시배수지 유출유량 적산차'].isnull()
     nullData = Data[nullBoolean].index
-    print(nullData)
+    # print(nullData)
     for i in nullData:
         # if Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차'] == np.NaN:
         #     Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']
@@ -37,11 +37,32 @@ def fillnaBehind(Data:pd.DataFrame):
                 (Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차'] +
                 Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차'])//2.0
     
+    print(nullData)
     Data = Data.fillna(method='pad')
 
     print(Data.isnull().sum())
 
     return Data
+
+'''
+fillZero 함수
+이 함수는 0가 연속적인 것들을 채우고 평균으로 바꿉니다.
+'''
+def fillZero(Data:pd.DataFrame):
+    zeroIndex = Data[Data['구미 혁신도시배수지 유출유량 적산차']==0].index
+    # prev = zeroIndex[0]
+    indexlist = []
+    
+    for i in zeroIndex:
+        if len(indexlist) == 0:
+            indexlist.append(i)
+            prev = zeroIndex[0]
+        elif prev + 1 == i: # 연속적이냐?
+            sum+=Data.loc[i]['구미 혁신도시배수지 유출유량 적산차']
+            
+            indexlist.append(i)
+        else: # 연속이 아닐때
+            pass
 
 '''
 outlierDataToNan 함수
