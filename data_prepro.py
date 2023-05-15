@@ -126,4 +126,4 @@ def XDataToXAndYSeq(Data:pd.DataFrame,step = 24):
         YSeq.append(X[j])
 
     
-    return np.array(XSeq), np.array(YSeq).reshape((-1,1))
+    return np.array(XSeq).reshape(-1,1,step), np.array(YSeq).reshape((-1,1))
