@@ -6,7 +6,7 @@ loadData 함수
 이 함수는 train,test 데이터를 불러오고 데이터셋을 리턴해줍니다.
 '''
 
-def loadData(trainDataPath:str,testDataPath:str):
+def loadData(trainDataPath:str,testDataPath:str,trainYearRange1 = 2017,trainYearRange2 = 2020):
     totalList = [trainDataPath,testDataPath]
     result = [] # [train, test]
     for dataPath in totalList:
@@ -16,6 +16,9 @@ def loadData(trainDataPath:str,testDataPath:str):
         df['month'] = pd.DatetimeIndex(df['datetime']).month
 
         result.append(df)
+
+    result[0] = result[0][result[0]['year']>=trainYearRange1]
+    result[0] = result[0][result[0]['year']<=trainYearRange2]
 
     return result
 '''
@@ -30,16 +33,15 @@ def fillnaBehind(Data:pd.DataFrame):
     for i in nullData:
         # if Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차'] == np.NaN:
         #     Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']
-        if Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차'] == 0:
-            Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차']
-        else:
+        if Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']>0 and  Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']>0:
             Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = \
                 (Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차'] +
                 Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차'])//2.0
-    
+        else:
+            continue
     print(nullData)
     
-
+    Data.reset_index(inplace=True)
     print(Data.isnull().sum())
 
     return Data
@@ -49,26 +51,31 @@ fillZero 함수
 이 함수는 0가 연속적인 것들을 채우고 평균으로 바꿉니다.
 '''
 def fillZero(Data:pd.DataFrame):
-    zeroIndex = Data[Data['구미 혁신도시배수지 유출유량 적산차']==0].index
+    zeroIndex = Data[Data['구미 혁신도시배수지 유출유량 적산차']==0].index.tolist()
+    print(zeroIndex)
+    splitList = continuedNumbersplit(zeroIndex)
+    for i in splitList:
+        changeNumber = i[-1]+1 / len(i)
+        Data.loc[i[0]:i[-1],'구미 혁신도시배수지 유출유량 적산차'] = changeNumber
     # prev = zeroIndex[0]
-    indexlist = []
+    # indexlist = []
     
-    for i in zeroIndex:
-        if len(indexlist) == 0:
-            indexlist.append(i)
+    # for i in zeroIndex:
+    #    if len(indexlist) == 0:
+    #        indexlist.append(i)
+    #        
+    #    elif prev + 1 == i: # 연속적이냐?
+    #        indexlist.append(i)
             
-        elif prev + 1 == i: # 연속적이냐?
-            indexlist.append(i)
-            
-        else: # 연속이 아닐때
-            total = Data.loc[prev+1]['구미 혁신도시배수지 유출유량 적산차']
-            print(total)
-            indexlist.append(prev+1)
-            cnt = len(indexlist)
-            Data.loc[np.array(indexlist)] = total / cnt
-            indexlist.clear()
-        prev = i
-
+    #    else: # 연속이 아닐때
+    #        total = Data.loc[prev+1]['구미 혁신도시배수지 유출유량 적산차']
+    #        print(total)
+    #        indexlist.append(prev+1)
+    #        cnt = len(indexlist)
+    #        Data.loc[np.array(indexlist)] = total / cnt
+    #        indexlist.clear()
+    #    prev = i
+    Data.reset_index(inplace=True)
     print(Data[Data['구미 혁신도시배수지 유출유량 적산차']==0].index)
     return Data
 '''
@@ -103,9 +110,9 @@ def outlierDataToNan(Data:pd.DataFrame,low:bool = False,high:bool = False,thres 
     # Data[Data['구미 혁신도시배수지 유출유량 적산차']<0] = np.NaN
 
     if low:
-        Data[Data['구미 혁신도시배수지 유출유량 적산차']<=0]= 0
-        Data[Data['구미 혁신도시배수지 유출유량 적산차']<np.NaN] = 0
-
+        Data[Data['구미 혁신도시배수지 유출유량 적산차']<=0]= 0.0
+        
+    Data[Data['구미 혁신도시배수지 유출유량 적산차'] == np.NaN] = 0.0
     return Data
 '''
 XDataToXAndYSeq(Data,step)
@@ -127,3 +134,37 @@ def XDataToXAndYSeq(Data:pd.DataFrame,step = 24):
 
     
     return np.array(XSeq).reshape(-1,1,step), np.array(YSeq).reshape((-1,1))
+
+
+'''
+continuedNumberSplit(df:pd.DataFrame)
+연속적인 숫자들끼리 묶는 함수 입니다.'''
+
+def continuedNumbersplit(index:list):
+
+    packet = []
+
+    tmp = []
+
+    v = index.pop(0)
+
+    tmp.append(v)
+
+    print(v)
+
+    while(len(index)>0):
+        vv = index.pop(0)
+        print(vv)
+        if v+1 == vv:
+            tmp.append(vv)
+            v = vv
+        else:
+            packet.append(tmp)
+            tmp = []
+            tmp.append(vv)
+            v = vv
+
+    packet.append(tmp)
+
+    return packet
+
