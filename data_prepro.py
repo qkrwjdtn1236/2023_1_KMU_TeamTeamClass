@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-
+import matplotlib.pyplot as plt
+from scipy import interpolate
 '''
 loadData 함수
 이 함수는 train,test 데이터를 불러오고 데이터셋을 리턴해줍니다.
@@ -33,7 +34,7 @@ def fillnaBehind(Data:pd.DataFrame):
     for i in nullData:
         # if Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차'] == np.NaN:
         #     Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']
-        if Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']>0 and  Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']>0:
+        if Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차']>0 and  Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차']>0:
             Data.loc[i,'구미 혁신도시배수지 유출유량 적산차'] = \
                 (Data.loc[i-1,'구미 혁신도시배수지 유출유량 적산차'] +
                 Data.loc[i+1,'구미 혁신도시배수지 유출유량 적산차'])//2.0
@@ -119,18 +120,18 @@ XDataToXAndYSeq(Data,step)
 시계열 데이터 X,Y 변수로 변환해주는 값입니다, 기본 step은 24로 지정되어 있습니다.
 
 '''
-def XDataToXAndYSeq(Data:pd.DataFrame,step = 24):
+def XDataToXAndYSeq(Data:pd.DataFrame,step = 24,output=1):
     
     X = Data['구미 혁신도시배수지 유출유량 적산차'].to_numpy()
     
     XSeq = []
     YSeq = []
     
-    startIndex = step + 1
+    startIndex = step
 
-    for i,j in enumerate(range(startIndex,len(X))):
-        XSeq.append(X[i:j-1])
-        YSeq.append(X[j])
+    for i,j in enumerate(range(startIndex,len(X)-output)):
+        XSeq.append(X[i:j])
+        YSeq.append(X[j:j+output])
 
     
     return np.array(XSeq).reshape(-1,1,step), np.array(YSeq).reshape((-1,1))
@@ -168,3 +169,52 @@ def continuedNumbersplit(index:list):
 
     return packet
 
+'''
+showValueGrap(df):
+이 함수는 적산차의 값을 그래프로 출력하는 함수입니다.
+
+'''
+def showValueGrap(df:pd.DataFrame,range1,range2):
+    plt.figure(figsize=(50,10))
+    for i in range(len(df)):
+        
+        Y = df[i]['구미 혁신도시배수지 유출유량 적산차'].to_numpy()
+        X = np.arange(1,len(Y)+1)
+        
+        
+        plt.plot(X[range1:range2],Y[range1:range2])
+
+    
+'''
+linearInterpolation(df):
+이 함수는 선형보간법을 이용하여 결측치를 극복하는 데이터입니다.
+https://rfriend.tistory.com/682
+'''
+def linearInterpolation(df:pd.DataFrame):
+    
+    Y = df['구미 혁신도시배수지 유출유량 적산차'].to_numpy()
+    X = np.arange(1,len(Y)+1)
+
+    y_new_linear = interpolate.interp1d(X,Y,kind='linear')
+    y_new = y_new_linear(X)
+
+    df['구미 혁신도시배수지 유출유량 적산차'] = y_new
+
+    return df
+
+def triple_exponential_smoothing(X,L,α,β,γ,ϕ):
+
+	def sig_ϕ(ϕ,m):
+		return np.sum(np.array([np.power(ϕ,i) for i in range(m+1)]))
+
+	C, S, B, F = (np.zeros( X.shape[0] ) for i in range(4))
+	S[0], F[0] = X[0], X[0]
+	B[0] = np.mean( X[L:2*L] - X[:L] ) / L
+	m = 12
+	sig_ϕ = sig_ϕ(ϕ,m)
+	for t in range(1, X.shape[0]):
+		S[t] = α * (X[t] - C[t % L]) + (1 - α) * (S[t-1] + ϕ * B[t-1])
+		B[t] = β * (S[t] - S[t-1]) + (1-β) * ϕ * B[t-1]
+		C[t % L] = γ * (X[t] - S[t]) + (1 - γ) * C[t % L]
+		F[t] = S[t] + sig_ϕ * B[t] + C[t % L]
+	return S
