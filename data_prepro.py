@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 
 
 '''
@@ -229,10 +229,10 @@ def triple_exponential_smoothing(X,L,α,β,γ,ϕ):
 		F[t] = S[t] + sig_ϕ * B[t] + C[t % L]
 	return S
 
-def reScale(X,reScale:MinMaxScaler = None):
+def reScale(X,reScale:StandardScaler = None):
     value = X['구미 혁신도시배수지 유출유량 적산차'].to_numpy().reshape(-1,1)
     if reScale is None:
-        reScale = MinMaxScaler()
+        reScale = StandardScaler()
         reScale.fit(value)
     X['구미 혁신도시배수지 유출유량 적산차'] = reScale.transform(value).reshape(-1,)
     return [X,reScale]
