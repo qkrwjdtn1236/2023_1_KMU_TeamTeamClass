@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
+from sklearn.preprocessing import MinMaxScaler
+
+
 '''
 loadData 함수
 이 함수는 train,test 데이터를 불러오고 데이터셋을 리턴해줍니다.
@@ -12,6 +15,7 @@ def loadData(trainDataPath:str,testDataPath:str,trainYearRange1 = 2017,trainYear
     result = [] # [train, test]
     for dataPath in totalList:
         df = pd.read_csv(dataPath)
+        print(df.info())
         df['datetime'] = pd.to_datetime(df['datetime'])
         df['year'] = pd.DatetimeIndex(df['datetime']).year
         df['month'] = pd.DatetimeIndex(df['datetime']).month
@@ -127,14 +131,20 @@ def XDataToXAndYSeq(Data:pd.DataFrame,step = 24,output=1):
     XSeq = []
     YSeq = []
     
-    startIndex = step
+    # startIndex = step
 
-    for i,j in enumerate(range(startIndex,len(X)-output)):
-        XSeq.append(X[i:j])
-        YSeq.append(X[j:j+output])
+    # for i,j in enumerate(range(startIndex,len(X)-output)):
+    #     XSeq.append(X[i:j])
+    #     YSeq.append(X[j:j+output])
+
+    for i in range(step,len(X)-output):
+        print(i)
+        XSeq.append(X[i-step:i])
+        YSeq.append(X[i:i+output])
 
     
-    return np.array(XSeq).reshape(-1,1,step), np.array(YSeq).reshape((-1,1))
+    
+    return np.array(XSeq).reshape(-1,1,step), np.array(YSeq).reshape((-1,output))
 
 
 '''
@@ -218,3 +228,12 @@ def triple_exponential_smoothing(X,L,α,β,γ,ϕ):
 		C[t % L] = γ * (X[t] - S[t]) + (1 - γ) * C[t % L]
 		F[t] = S[t] + sig_ϕ * B[t] + C[t % L]
 	return S
+
+def reScale(X,reScale:MinMaxScaler = None):
+    value = X['구미 혁신도시배수지 유출유량 적산차'].to_numpy().reshape(-1,1)
+    if reScale is None:
+        reScale = MinMaxScaler()
+        reScale.fit(value)
+    X['구미 혁신도시배수지 유출유량 적산차'] = reScale.transform(value).reshape(-1,)
+    return [X,reScale]
+
